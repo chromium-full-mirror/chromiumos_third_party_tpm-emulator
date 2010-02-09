@@ -1,0 +1,7 @@
+DESCRIPTION="Trusted Platform Module (TPM) Emulator"
+HOMEPAGE="http://tpm-emulator.berlios.de"
+UPSTREAM_REPO="http://svn.berlios.de/svnroot/repos/tpm-emulator"
+LOCAL_GIT_REPO="git://git.chromium.org/tpm-emulator"
+UPSTREAM_BUGSDB=""
+LOCAL_BUGSDB=""
+LICENSE="GPL2 or (optionally) later version"
