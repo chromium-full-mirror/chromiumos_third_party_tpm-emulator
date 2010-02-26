@@ -1,6 +1,5 @@
-/* Software-Based Trusted Platform Module (TPM) Emulator for Linux
- * Copyright (C) 2004 Mario Strasser <mast@gmx.net>,
- *                    Swiss Federal Institute of Technology (ETH) Zurich
+/* Software-based Trusted Platform Module (TPM) Emulator
+ * Copyright (C) 2004-2010 Mario Strasser <mast@gmx.net>
  *
  * This module is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published
@@ -12,15 +11,22 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * $Id$
+ * $Id: tpm_data.c 372 2010-02-15 12:52:00Z mast $
  */
 
 #include "tpm_emulator.h"
 #include "tpm_structures.h"
 #include "tpm_marshalling.h"
+#include "tpm_commands.h"
 #include "tpm_data.h"
 
 TPM_DATA tpmData;
+UINT32 tpmConf;
+
+#ifdef MTM_EMULATOR
+#include "mtm/mtm_data.h"
+#include "mtm/mtm_marshalling.h"
+#endif
 
 static TPM_VERSION tpm_version = { 1, 2, VERSION_MAJOR, VERSION_MINOR };
 
@@ -72,7 +78,6 @@ static void init_timeouts(void)
 
 void tpm_init_data(void)
 {
-#ifndef TPM_GENERATE_EK
   /* endorsement key */
   uint8_t ek_n[] =  "\xa8\xdb\xa9\x42\xa8\xf3\xb8\x06\x85\x90\x76\x93\xad\xf7"
     "\x74\xec\x3f\xd3\x3d\x9d\xe8\x2e\xff\x15\xed\x0e\xce\x5f\x93"
@@ -111,7 +116,6 @@ void tpm_init_data(void)
     "\xd1\xc0\x8b\x5b\xa2\x2e\xa7\x15\xca\x50\x75\x10\x48\x9c\x2b"
     "\x18\xb9\x67\x8f\x5d\x64\xc3\x28\x9f\x2f\x16\x2f\x08\xda\x47"
     "\xec\x86\x43\x0c\x80\x99\x07\x34\x0f";
-#endif
   int i;
   info("initializing TPM data to default values");
   /* reset all data to NULL, FALSE or 0 */
@@ -150,44 +154,40 @@ void tpm_init_data(void)
   for (i = 24; i < TPM_NUM_PCR; i++) {
     init_pcr_attr(i, TRUE, 0x00, 0x00);
   }
-#ifdef TPM_GENERATE_EK
-  /* generate a new endorsement key */
-  tpm_rsa_generate_key(&tpmData.permanent.data.endorsementKey, 2048);
-#else
-  /* setup endorsement key */
-  tpm_rsa_import_key(&tpmData.permanent.data.endorsementKey, 
-    RSA_MSB_FIRST, ek_n, 256, ek_e, 3, ek_p, ek_q);
-#endif
-#ifdef TPM_GENERATE_SEED_DAA
-  /* generate the DAA seed */
-  tpm_get_random_bytes(tpmData.permanent.data.tpmDAASeed.nonce, 
-    sizeof(tpmData.permanent.data.tpmDAASeed.nonce));
-#else
-  /* setup DAA seed */
-  memcpy(tpmData.permanent.data.tpmDAASeed.nonce, 
-    "\x77\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-    "\x00\x00\x00\x77", sizeof(TPM_NONCE));
-#endif
+  if (tpmConf & TPM_CONF_GENERATE_EK) {
+    /* generate a new endorsement key */
+    tpm_rsa_generate_key(&tpmData.permanent.data.endorsementKey, 2048);
+  } else {
+    /* setup endorsement key */
+    tpm_rsa_import_key(&tpmData.permanent.data.endorsementKey, 
+      RSA_MSB_FIRST, ek_n, 256, ek_e, 3, ek_p, ek_q);
+  }
+  if (tpmConf & TPM_CONF_GENERATE_SEED_DAA) {
+    /* generate the DAA seed */
+    tpm_get_random_bytes(tpmData.permanent.data.tpmDAASeed.nonce, 
+      sizeof(tpmData.permanent.data.tpmDAASeed.nonce));
+  } else {
+    /* setup DAA seed */
+    memcpy(tpmData.permanent.data.tpmDAASeed.nonce, 
+      "\x77\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+      "\x00\x00\x00\x77", sizeof(TPM_NONCE));
+  }
   memcpy(tpmData.permanent.data.ekReset.nonce, "\xde\xad\xbe\xef", 4);
   /* initialize predefined non-volatile storage */
   init_nv_storage();
   /* set the timeout and duration values */
   init_timeouts();
+#ifdef MTM_EMULATOR
+  mtm_init_data();
+#endif
 }
 
 void tpm_release_data(void)
 {
-  unsigned int i;
-  /* release the EK, SRK as well as all other rsa keys */
-  if (tpmData.permanent.data.endorsementKey.size > 0)
-    tpm_rsa_release_private_key(&tpmData.permanent.data.endorsementKey);
-  if (tpmData.permanent.data.srk.payload)
-    free_TPM_KEY_DATA(tpmData.permanent.data.srk);
-  if (tpmData.permanent.data.manuMaintPub.valid)
-    free_TPM_PUBKEY_DATA(tpmData.permanent.data.manuMaintPub);
-  for (i = 0; i < TPM_MAX_KEYS; i++)
-    if (tpmData.permanent.data.keys[i].payload)
-      free_TPM_KEY_DATA(tpmData.permanent.data.keys[i]);
+  free_TPM_DATA(tpmData);
+#ifdef MTM_EMULATOR
+  free_MTM_DATA(mtmData);
+#endif
 }
 
 int tpm_store_permanent_data(void)
@@ -198,22 +198,21 @@ int tpm_store_permanent_data(void)
 
   /* marshal data */
   buf_length = len = sizeof_TPM_VERSION(tpmData.permanent.data.version)
-    + sizeof_TPM_PERMANENT_FLAGS(tpmData.permanent.flags) + 2
-    + sizeof_TPM_PERMANENT_DATA(&tpmData.permanent.data)
-    + sizeof_TPM_STCLEAR_FLAGS(tpmData.stclear.flags)
-    + sizeof_TPM_STCLEAR_DATA(tpmData.stclear.data)
-    + sizeof_TPM_STANY_DATA(tpmData.stany.data);
+#ifdef MTM_EMULATOR
+                     + sizeof_TPM_DATA(tpmData) + sizeof_MTM_DATA(mtmData);
+#else
+                     + sizeof_TPM_DATA(tpmData);
+#endif
   debug("size of permanent data: %d", buf_length);
   buf = ptr = tpm_malloc(buf_length);
   if (buf == NULL
       || tpm_marshal_TPM_VERSION(&ptr, &len, &tpmData.permanent.data.version)
-      || tpm_marshal_TPM_PERMANENT_FLAGS(&ptr, &len, &tpmData.permanent.flags)
-      || tpm_marshal_BOOL(&ptr, &len, tpmData.permanent.flags.selfTestSucceeded)
-      || tpm_marshal_BOOL(&ptr, &len, tpmData.permanent.flags.owned)
-      || tpm_marshal_TPM_PERMANENT_DATA(&ptr, &len, &tpmData.permanent.data)
-      || tpm_marshal_TPM_STCLEAR_FLAGS(&ptr, &len, &tpmData.stclear.flags)
-      || tpm_marshal_TPM_STCLEAR_DATA(&ptr, &len, &tpmData.stclear.data)
-      || tpm_marshal_TPM_STANY_DATA(&ptr, &len, &tpmData.stany.data)) {
+#ifdef MTM_EMULATOR
+      || tpm_marshal_TPM_DATA(&ptr, &len, &tpmData)
+      || tpm_marshal_MTM_DATA(&ptr, &len, &mtmData)) {
+#else
+      || tpm_marshal_TPM_DATA(&ptr, &len, &tpmData)) {
+#endif
     tpm_free(buf);
     return -1;
   }
@@ -240,13 +239,10 @@ int tpm_restore_permanent_data(void)
   /* unmarshal data */
   if (tpm_unmarshal_TPM_VERSION(&ptr, &len, &ver)
       || memcmp(&ver, &tpm_version, sizeof(TPM_VERSION))
-      || tpm_unmarshal_TPM_PERMANENT_FLAGS(&ptr, &len, &tpmData.permanent.flags)
-      || tpm_unmarshal_BOOL(&ptr, &len, &tpmData.permanent.flags.selfTestSucceeded)
-      || tpm_unmarshal_BOOL(&ptr, &len, &tpmData.permanent.flags.owned)
-      || tpm_unmarshal_TPM_PERMANENT_DATA(&ptr, &len, &tpmData.permanent.data)
-      || tpm_unmarshal_TPM_STCLEAR_FLAGS(&ptr, &len, &tpmData.stclear.flags)      
-      || tpm_unmarshal_TPM_STCLEAR_DATA(&ptr, &len, &tpmData.stclear.data)
-      || tpm_unmarshal_TPM_STANY_DATA(&ptr, &len, &tpmData.stany.data)
+      || tpm_unmarshal_TPM_DATA(&ptr, &len, &tpmData)
+#ifdef MTM_EMULATOR
+      || tpm_unmarshal_MTM_DATA(&ptr, &len, &mtmData)
+#endif
       || len > 0) {
     tpm_free(buf);
     return -1;

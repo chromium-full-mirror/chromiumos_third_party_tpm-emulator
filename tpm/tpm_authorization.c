@@ -1,6 +1,5 @@
-/* Software-Based Trusted Platform Module (TPM) Emulator for Linux
- * Copyright (C) 2004 Mario Strasser <mast@gmx.net>,
- *                    Swiss Federal Institute of Technology (ETH) Zurich
+/* Software-based Trusted Platform Module (TPM) Emulator
+ * Copyright (C) 2004-2010 Mario Strasser <mast@gmx.net>
  *
  * This module is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published
@@ -12,7 +11,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * $Id$
+ * $Id: tpm_authorization.c 367 2010-02-13 15:52:18Z mast $
  */
 
 #include "tpm_emulator.h"
@@ -197,6 +196,7 @@ TPM_RESULT TPM_OSAP(TPM_ENTITY_TYPE entityType, UINT32 entityValue,
         debug("TPM_OSAP failed(): tpm_get_key(handle) == NULL");
       break;
     case TPM_ET_OWNER:
+    case TPM_ET_VERIFICATION_AUTH:
       session->handle = TPM_KH_OWNER;
       if (tpmData.permanent.flags.owned)
         secret = &tpmData.permanent.data.ownerAuth;

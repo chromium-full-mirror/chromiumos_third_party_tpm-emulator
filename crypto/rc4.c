@@ -1,6 +1,5 @@
-/* Software-Based Trusted Platform Module (TPM) Emulator for Linux
- * Copyright (C) 2004 Mario Strasser <mast@gmx.net>,
- *                    Swiss Federal Institute of Technology (ETH) Zurich
+/* Software-based Trusted Platform Module (TPM) Emulator
+ * Copyright (C) 2004-2010 Mario Strasser <mast@gmx.net>
  *
  * This module is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published
@@ -12,7 +11,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * $Id$
+ * $Id: rc4.c 364 2010-02-11 10:24:45Z mast $
  */
 
 #include "rc4.h"

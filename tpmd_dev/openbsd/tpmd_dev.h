@@ -1,14 +1,13 @@
-/* Software-Based Trusted Platform Module (TPM) Emulator for OpenBSD
+/* Software-based Trusted Platform Module (TPM) Emulator
+ * Copyright (C) 2004-2010 Mario Strasser <mast@gmx.net>
  * Copyright (C) 2007 Sebastian Schuetz <sebastian_schuetz@genua.de>
- * Copyright (C) 2007 Mario Strasser <mast@gmx.net>,
- *                    Swiss Federal Institute of Technology (ETH) Zurich
  *
- * This program is free software; you can redistribute it and/or modify
+ * This module is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published
  * by the Free Software Foundation; either version 2 of the License,
  * or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * This module is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -18,6 +17,8 @@
 
 #ifndef _TPM_DEV_HEADER_
 #define _TPM_DEV_HEADER_
+
+#include "config.h"
 
 #define cdev_tpm_init(c,n) { \
     dev_init(c,n,open),dev_init(c,n,close),dev_init(c,n,read), \
@@ -33,7 +34,7 @@ static struct socket *tpmd_sock = NULL;
 static struct mbuf *nm = NULL;
 static struct simplelock slock;
 
-char tpmd_socket_name[] = "/var/tpm/tpmd_socket:0";
+char tpmd_socket_name[] = TPM_SOCKET_NAME;
 
 #define TPM_MODULE_NAME   "tpm_dev"
 #define TPM_STATE_IS_OPEN 0

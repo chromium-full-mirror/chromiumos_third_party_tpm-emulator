@@ -1,6 +1,5 @@
-/* TPM Device Driver Library for the TPM Emulator
- * Copyright (C) 2006 Mario Strasser <mast@gmx.net>,
- *                    Swiss Federal Institute of Technology (ETH) Zurich
+/* Software-based Trusted Platform Module (TPM) Emulator
+ * Copyright (C) 2004-2010 Mario Strasser <mast@gmx.net>
  *
  * This module is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published
@@ -12,17 +11,11 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * $Id$
+ * $Id: tddl.c 364 2010-02-11 10:24:45Z mast $
  */
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
-#include <errno.h>
-#include <pthread.h>
 #include <config.h>
 #include "tddl.h"
 
@@ -37,53 +30,16 @@ static int tddli_dh = -1;
 static TSS_RESULT tddli_driver_status = TDDL_DRIVER_FAILED;
 static TSS_RESULT tddli_device_status = TDDL_DEVICE_NOT_FOUND;
 
-/* library lock */
-static pthread_mutex_t tddli_lock = PTHREAD_MUTEX_INITIALIZER;
-
-static TSS_RESULT open_device(const char *device_name)
-{
-  tddli_dh = open(device_name, O_RDWR);
-  if (tddli_dh < 0) {
-    if (errno == ENOENT || errno == ENXIO) {
-      tddli_driver_status = TDDL_DRIVER_FAILED;
-      tddli_device_status = TDDL_DEVICE_NOT_FOUND;
-    } else {
-      tddli_driver_status = TDDL_DRIVER_NOT_OPENED;
-      tddli_device_status = TDDL_DEVICE_RECOVERABLE;
-    }
-    return TDDL_E_FAIL;
-  } else {
-    tddli_driver_status = TDDL_DRIVER_OK;
-    tddli_device_status = TDDL_DEVICE_OK;
-    return TDDL_SUCCESS;
-  }
-}
-
-static TSS_RESULT open_socket(const char *socket_name)
-{
-  struct sockaddr_un addr;
-  tddli_dh = socket(AF_UNIX, SOCK_STREAM, 0);
-  if (tddli_dh < 0) {
-    tddli_driver_status = TDDL_DRIVER_FAILED;
-    tddli_device_status = TDDL_DEVICE_NOT_FOUND;
-    return TDDL_E_FAIL;
-  }
-  addr.sun_family = AF_UNIX;
-  strncpy(addr.sun_path, socket_name, sizeof(addr.sun_path));
-  if (connect(tddli_dh, (struct sockaddr*)&addr, sizeof(struct sockaddr_un)) < 0) {
-    tddli_driver_status = TDDL_DRIVER_FAILED;
-    tddli_device_status = TDDL_DEVICE_NOT_FOUND;
-    return TDDL_E_FAIL;
-  }
-  tddli_driver_status = TDDL_DRIVER_OK;
-  tddli_device_status = TDDL_DEVICE_OK;
-  return TDDL_SUCCESS;
-}
+#if defined(_WIN32) || defined(_WIN64)
+#include "tddl_windows.h"
+#else
+#include "tddl_unix.h"
+#endif
 
 TSS_RESULT Tddli_Open()
 {
   TSS_RESULT res;
-  pthread_mutex_lock(&tddli_lock);
+  tddli_mutex_lock(&tddli_lock);
   if (tddli_dh != -1) {
     res = TDDL_E_ALREADY_OPENED;
   } else {
@@ -92,21 +48,21 @@ TSS_RESULT Tddli_Open()
       res = open_device(tpm_device_name);
     }
   }
-  pthread_mutex_unlock(&tddli_lock);
+  tddli_mutex_unlock(&tddli_lock);
   return res;
 } 
 
 TSS_RESULT Tddli_Close()
 {
   TSS_RESULT res = TDDL_SUCCESS;
-  pthread_mutex_lock(&tddli_lock);
+  tddli_mutex_lock(&tddli_lock);
   if (tddli_dh >= 0) {
     close(tddli_dh);
     tddli_dh = -1;
   } else {
     res = TDDL_E_ALREADY_CLOSED;
   }
-  pthread_mutex_unlock(&tddli_lock); 
+  tddli_mutex_unlock(&tddli_lock); 
   return res;
 }
  
@@ -142,7 +98,7 @@ TSS_RESULT Tddli_TransmitData(BYTE* pTransmitBuf, UINT32 TransmitBufLen,
                               BYTE* pReceiveBuf, UINT32* puntReceiveBufLen)
 {
   TSS_RESULT res;
-  pthread_mutex_lock(&tddli_lock);
+  tddli_mutex_lock(&tddli_lock);
   if (tddli_dh >= 0) {
     res = send_to_tpm(pTransmitBuf, TransmitBufLen);
     if (res == TDDL_SUCCESS)
@@ -150,7 +106,7 @@ TSS_RESULT Tddli_TransmitData(BYTE* pTransmitBuf, UINT32 TransmitBufLen,
   } else {
     res = TDDL_E_FAIL;
   }
-  pthread_mutex_unlock(&tddli_lock);
+  tddli_mutex_unlock(&tddli_lock);
   return res;
 }
 
@@ -219,7 +175,7 @@ TSS_RESULT Tddli_GetCapability(UINT32 CapArea, UINT32 SubCap,
 {
   TSS_RESULT res = TDDL_SUCCESS;
   if (tddli_dh < 0) return TDDL_E_FAIL;
-  pthread_mutex_lock(&tddli_lock);
+  tddli_mutex_lock(&tddli_lock);
   switch (CapArea) {
     case TDDL_CAP_VERSION:
       res = cap_version(SubCap, pCapBuf, puntCapBufLen);    
@@ -230,7 +186,7 @@ TSS_RESULT Tddli_GetCapability(UINT32 CapArea, UINT32 SubCap,
     default:
       res = TDDL_E_BAD_PARAMETER;
   }
-  pthread_mutex_unlock(&tddli_lock);
+  tddli_mutex_unlock(&tddli_lock);
   return res;
 }
 
@@ -244,7 +200,7 @@ TSS_RESULT Tddli_SetCapability(UINT32 CapArea, UINT32 SubCap,
 TSS_RESULT Tddli_GetStatus(UINT32 ReqStatusType, UINT32* puntStatus) 
 {
   TSS_RESULT res = TDDL_SUCCESS;
-  pthread_mutex_lock(&tddli_lock);
+  tddli_mutex_lock(&tddli_lock);
   switch (ReqStatusType) {
     case TDDL_DRIVER_STATUS:
       *puntStatus = tddli_driver_status;
@@ -255,7 +211,7 @@ TSS_RESULT Tddli_GetStatus(UINT32 ReqStatusType, UINT32* puntStatus)
     default:
       res = TDDL_E_BAD_PARAMETER;
   }
-  pthread_mutex_unlock(&tddli_lock);
+  tddli_mutex_unlock(&tddli_lock);
   return res;
 }
 
@@ -269,5 +225,62 @@ TSS_RESULT Tddli_PowerManagementControl(TSS_BOOL SendPowerManager,
                                         UINT32 DriverManagesPowerStates)
 {
   return TDDL_E_NOTIMPL;
+}
+
+/* 
+ * Export also TDDL_* function aliases as they are
+ * used by some non standard-conform applications.
+ */
+
+TSS_RESULT TDDL_Open()
+{
+  return Tddli_Open();
+}
+
+
+TSS_RESULT TDDL_Close()
+{
+  return Tddli_Close();
+}
+ 
+TSS_RESULT TDDL_Cancel()
+{
+  return Tddli_Cancel();
+}
+
+TSS_RESULT TDDL_TransmitData(BYTE* pTransmitBuf, UINT32 TransmitBufLen,
+                              BYTE* pReceiveBuf, UINT32* puntReceiveBufLen)
+{
+  return Tddli_TransmitData(pTransmitBuf, TransmitBufLen,
+                            pReceiveBuf, puntReceiveBufLen);
+}
+
+TSS_RESULT TDDL_GetCapability(UINT32 CapArea, UINT32 SubCap, 
+                              BYTE* pCapBuf, UINT32* puntCapBufLen)
+{
+  return Tddli_GetCapability(CapArea, SubCap, pCapBuf, puntCapBufLen);
+}
+
+TSS_RESULT TDDL_SetCapability(UINT32 CapArea, UINT32 SubCap, 
+                              BYTE* pCapBuf, UINT32* puntCapBufLen)
+{
+  return Tddli_SetCapability(CapArea, SubCap, pCapBuf, puntCapBufLen);
+}
+
+TSS_RESULT TDDL_GetStatus(UINT32 ReqStatusType, UINT32* puntStatus)
+{
+  return Tddli_GetStatus(ReqStatusType, puntStatus);
+}
+
+TSS_RESULT TDDL_SetPowerManagement(TSS_BOOL SendSaveStateCommand,
+                                    UINT32 *QuerySetNewTPMPowerState)
+{
+  return Tddli_SetPowerManagement(SendSaveStateCommand, QuerySetNewTPMPowerState);
+}
+
+TSS_RESULT TDDL_PowerManagementControl(TSS_BOOL SendPowerManager,
+                                        UINT32 DriverManagesPowerStates)
+{
+  return Tddli_PowerManagementControl(SendPowerManager, DriverManagesPowerStates);
 }
 

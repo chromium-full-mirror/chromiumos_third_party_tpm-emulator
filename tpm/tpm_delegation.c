@@ -1,7 +1,5 @@
-/* Software-Based Trusted Platform Module (TPM) Emulator for Linux
- * Copyright (C) 2006 Mario Strasser <mast@gmx.net>,
- *                    Domenic Schröder <schroeder@gmx.ch>,
- *                    Swiss Federal Institute of Technology (ETH) Zurich
+/* Software-based Trusted Platform Module (TPM) Emulator
+ * Copyright (C) 2004-2010 Mario Strasser <mast@gmx.net>
  *
  * This module is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published
@@ -13,7 +11,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * $Id$
+ * $Id: tpm_delegation.c 367 2010-02-13 15:52:18Z mast $
  */
 
 #include "tpm_emulator.h"
@@ -553,13 +551,6 @@ TPM_RESULT TPM_Delegate_ReadTable(UINT32 *familyTableSize, BYTE **familyTable,
     }
   }
   return TPM_SUCCESS;
-}
-
-static TPM_TAG get_structure_tag(BYTE *ptr, UINT32 length)
-{
-  TPM_TAG tag;
-  if (tpm_unmarshal_TPM_TAG(&ptr, &length, &tag) != 0) return 0xffff;
-  return tag;
 }
 
 TPM_RESULT TPM_Delegate_UpdateVerification(UINT32 inputSize, BYTE *inputData,

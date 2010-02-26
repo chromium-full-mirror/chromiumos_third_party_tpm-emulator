@@ -1,6 +1,5 @@
-/* Software-Based Trusted Platform Module (TPM) Emulator for Linux
- * Copyright (C) 2004 Mario Strasser <mast@gmx.net>,
- *                    Swiss Federal Institute of Technology (ETH) Zurich
+/* Software-based Trusted Platform Module (TPM) Emulator
+ * Copyright (C) 2004-2010 Mario Strasser <mast@gmx.net>
  *
  * This module is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published
@@ -12,7 +11,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * $Id$
+ * $Id: tpm_transport.c 367 2010-02-13 15:52:18Z mast $
  */
 
 /* 
@@ -246,7 +245,7 @@ static void compute_key_digest(TPM_REQUEST *req, TPM_DIGEST *digest)
   tpm_sha1_ctx_t ctx;
   TPM_HANDLE h1, h2;
   TPM_KEY_DATA *k1, *k2;
-  BYTE *ptr, buf[4];
+  BYTE *ptr;
   UINT32 len, offset = tpm_get_in_param_offset(req->ordinal);
   /* handle some exceptions */
   if (req->ordinal == TPM_ORD_FlushSpecific) offset = 0;

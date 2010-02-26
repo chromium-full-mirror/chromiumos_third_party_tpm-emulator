@@ -1,6 +1,5 @@
-/* Software-Based Trusted Platform Module (TPM) Emulator for Linux
- * Copyright (C) 2004 Mario Strasser <mast@gmx.net>,
- *                    Swiss Federal Institute of Technology (ETH) Zurich
+/* Software-based Trusted Platform Module (TPM) Emulator
+ * Copyright (C) 2004-2010 Mario Strasser <mast@gmx.net>
  *
  * This module is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published
@@ -12,7 +11,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * $Id$
+ * $Id: tpm_startup.c 367 2010-02-13 15:52:18Z mast $
  */
 
 #include "tpm_emulator.h"
@@ -67,7 +66,7 @@ TPM_RESULT TPM_Startup(TPM_STARTUP_TYPE startupType)
     /* reset STCLEAR_DATA */
     SET_TO_ZERO(&tpmData.stclear.data);
     tpmData.stclear.data.tag = TPM_TAG_STCLEAR_DATA;
-    /* flush volatiles and PCR dependent keys keys */
+    /* flush volatiles and PCR dependent keys */
     for (i = 0; i < TPM_MAX_KEYS; i++) {
       if (tpmData.permanent.data.keys[i].payload
           && ((tpmData.permanent.data.keys[i].keyFlags & TPM_KEY_FLAG_VOLATILE)

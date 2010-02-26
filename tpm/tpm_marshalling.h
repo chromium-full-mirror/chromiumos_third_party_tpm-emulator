@@ -1,6 +1,5 @@
-/* Software-Based Trusted Platform Module (TPM) Emulator for Linux
- * Copyright (C) 2004 Mario Strasser <mast@gmx.net>,
- *                    Swiss Federal Institute of Technology (ETH) Zurich
+/* Software-based Trusted Platform Module (TPM) Emulator
+ * Copyright (C) 2004-2010 Mario Strasser <mast@gmx.net>
  *
  * This module is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published
@@ -12,11 +11,11 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * $Id$
+ * $Id: tpm_marshalling.h 384 2010-02-17 14:17:43Z mast $
  */
 
-#ifndef _MARSHALLING_H_
-#define _MARSHALLING_H_
+#ifndef _TPM_MARSHALLING_H_
+#define _TPM_MARSHALLING_H_
 
 #include "tpm_emulator.h"
 #include "tpm_structures.h"
@@ -75,8 +74,8 @@ static inline int tpm_unmarshal_BYTE(BYTE **ptr, UINT32 *length, BYTE *v)
 static inline int tpm_marshal_UINT16(BYTE **ptr, UINT32 *length, UINT16 v)
 {
   if (*length < 2) return -1;
-  (*ptr)[0] = (v >> 8) & 0xff; 
-  (*ptr)[1] = v & 0xff;
+  (*ptr)[0] = (BYTE)((v >> 8) & 0xff); 
+  (*ptr)[1] = (BYTE)(v & 0xff);
   *ptr += 2; *length -= 2;
   return 0;
 }
@@ -92,8 +91,8 @@ static inline int tpm_unmarshal_UINT16(BYTE **ptr, UINT32 *length, UINT16 *v)
 static inline int tpm_marshal_UINT32(BYTE **ptr, UINT32 *length, UINT32 v)
 {
   if (*length < 4) return -1;
-  (*ptr)[0] = (v >> 24) & 0xff; (*ptr)[1] = (v >> 16) & 0xff;
-  (*ptr)[2] = (v >>  8) & 0xff; (*ptr)[3] = v & 0xff;
+  (*ptr)[0] = (BYTE)((v >> 24) & 0xff); (*ptr)[1] = (BYTE)((v >> 16) & 0xff);
+  (*ptr)[2] = (BYTE)((v >>  8) & 0xff); (*ptr)[3] = (BYTE)(v & 0xff);
   *ptr += 4; *length -= 4;
   return 0;
 }
@@ -110,10 +109,10 @@ static inline int tpm_unmarshal_UINT32(BYTE **ptr, UINT32 *length, UINT32 *v)
 static inline int tpm_marshal_UINT64(BYTE **ptr, UINT32 *length, UINT64 v)
 {
   if (*length < 8) return -1;
-  (*ptr)[0] = (v >> 56) & 0xff; (*ptr)[1] = (v >> 48) & 0xff;
-  (*ptr)[2] = (v >> 40) & 0xff; (*ptr)[3] = (v >> 32) & 0xff;
-  (*ptr)[4] = (v >> 24) & 0xff; (*ptr)[5] = (v >> 16) & 0xff;
-  (*ptr)[6] = (v >>  8) & 0xff; (*ptr)[7] = v & 0xff;
+  (*ptr)[0] = (BYTE)((v >> 56) & 0xff); (*ptr)[1] = (BYTE)((v >> 48) & 0xff);
+  (*ptr)[2] = (BYTE)((v >> 40) & 0xff); (*ptr)[3] = (BYTE)((v >> 32) & 0xff);
+  (*ptr)[4] = (BYTE)((v >> 24) & 0xff); (*ptr)[5] = (BYTE)((v >> 16) & 0xff);
+  (*ptr)[6] = (BYTE)((v >>  8) & 0xff); (*ptr)[7] = (BYTE)(v & 0xff);
   *ptr += 8; *length -= 8;
   return 0;
 }
@@ -483,6 +482,9 @@ int tpm_unmarshal_TPM_STANY_FLAGS(BYTE **ptr, UINT32 *length, TPM_STANY_FLAGS *v
 int tpm_marshal_RSA(BYTE **ptr, UINT32 *length, tpm_rsa_private_key_t *v);
 int tpm_unmarshal_RSA(BYTE **ptr, UINT32 *length, tpm_rsa_private_key_t *v);
 
+int tpm_marshal_RSAPub(BYTE **ptr, UINT32 *length, tpm_rsa_public_key_t *v);
+int tpm_unmarshal_RSAPub(BYTE **ptr, UINT32 *length, tpm_rsa_public_key_t *v);
+
 int tpm_marshal_TPM_KEY_DATA(BYTE **ptr, UINT32 *length, TPM_KEY_DATA *v);
 int tpm_unmarshal_TPM_KEY_DATA(BYTE **ptr, UINT32 *length, TPM_KEY_DATA *v);
 
@@ -498,7 +500,10 @@ int tpm_unmarshal_TPM_SESSION_DATA(BYTE **ptr, UINT32 *length, TPM_SESSION_DATA 
 int tpm_marshal_TPM_STANY_DATA(BYTE **ptr, UINT32 *length, TPM_STANY_DATA *v);
 int tpm_unmarshal_TPM_STANY_DATA(BYTE **ptr, UINT32 *length, TPM_STANY_DATA *v);
 
+int tpm_unmarshal_TPM_DATA(BYTE **ptr, UINT32 *length, TPM_DATA *v);
+int tpm_marshal_TPM_DATA(BYTE **ptr, UINT32 *length, TPM_DATA *v);
+
 int tpm_marshal_TPM_RESPONSE(BYTE **ptr, UINT32 *length, TPM_RESPONSE *v);
 int tpm_unmarshal_TPM_REQUEST(BYTE **ptr, UINT32 *length, TPM_REQUEST *v);
 
-#endif /* _MARSHALLING_H_ */
+#endif /* _TPM_MARSHALLING_H_ */

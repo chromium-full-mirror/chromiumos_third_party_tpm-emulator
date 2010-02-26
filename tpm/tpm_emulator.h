@@ -1,5 +1,5 @@
-/* Software-Based Trusted Platform Module (TPM) Emulator for Linux
- * Copyright (C) 2004 Mario Strasser <mast@gmx.net>,
+/* Software-based Trusted Platform Module (TPM) Emulator
+ * Copyright (C) 2004-2010 Mario Strasser <mast@gmx.net>
  *
  * This module is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published
@@ -11,7 +11,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * $Id$
+ * $Id: tpm_emulator.h 426 2010-02-22 17:11:58Z mast $
  */
 
 #ifndef _TPM_EMULATOR_H_
@@ -20,15 +20,24 @@
 #include "config.h"
 #include "tpm_emulator_extern.h"
 
-#define TPM_CMD_BUF_SIZE 4096
-
 #define TPM_MANUFACTURER 0x4554485A /* 'ETHZ' */        
+
+/**
+ * configuration flags
+ */
+#define TPM_CONF_STRONG_PERSISTENCE            0x01
+#define TPM_CONF_GENERATE_EK                   0x02
+#define TPM_CONF_GENERATE_SEED_DAA             0x04
+#define TPM_CONF_USE_INTERNAL_PRNG             0x08
+#define TPM_CONF_ALLOW_PRNG_STATE_SETTING      0x10
+#define TPM_CONF_KEEP_PUBEK_READABLE           0x20
 
 /**
  * tpm_emulator_init - initialises and starts the TPM emulator
  * @startup: [in] startup mode
+ * @conf: [in] tpm configuration flags
  */
-void tpm_emulator_init(uint32_t startup);
+void tpm_emulator_init(uint32_t startup, uint32_t conf);
 
 /**
  * tpm_emulator_shutdown - shuts the TPM emulator down

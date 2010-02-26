@@ -1,7 +1,6 @@
-/* Software-Based Trusted Platform Module (TPM) Emulator for Linux
- * Copyright (C) 2004 Mario Strasser <mast@gmx.net>,
- *                    Swiss Federal Institute of Technology (ETH) Zurich,
- *               2006, 2008 Heiko Stamer <stamer@gaos.org>
+/* Software-based Trusted Platform Module (TPM) Emulator
+ * Copyright (C) 2004-2010 Mario Strasser <mast@gmx.net>
+ *               2005-2008 Heiko Stamer <stamer@gaos.org>
  *
  * This module is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published
@@ -13,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * $Id$
+ * $Id: tpm_capability.c 407 2010-02-19 11:14:52Z mast $
  */
 
 #include "tpm_emulator.h"
@@ -354,6 +353,7 @@ static TPM_RESULT cap_handle(UINT32 subCapSize, BYTE *subCap,
           list.loaded++;
           list.handle[i] = tpmData.stany.data.contextList[i];
         }
+      break;
     default:
       return TPM_BAD_MODE;
   }
@@ -886,14 +886,15 @@ static TPM_RESULT set_perm_data(UINT32 subCap, BYTE *setValue,
   TPM_NONCE nonce;
   switch (subCap) {
 
-#ifdef TPM_ENABLE_PRNG_STATE_SETTING
     case 16:
-      if (setValueSize != sizeof(tpmData.permanent.data.rngState))
+      if (tpmConf & TPM_CONF_ALLOW_PRNG_STATE_SETTING) {
+        if (setValueSize != sizeof(tpmData.permanent.data.rngState))
+          return TPM_BAD_PARAMETER;
+        memcpy(&tpmData.permanent.data.rngState, setValue, setValueSize);
+        return TPM_SUCCESS;
+      } else {
         return TPM_BAD_PARAMETER;
-      memcpy(&tpmData.permanent.data.rngState, setValue, setValueSize);
-      return TPM_SUCCESS;
-#endif /* TPM_ENABLE_PRNG_STATE_SETTING */
-
+      }
 
     case 23:
       if (!ownerAuth) return TPM_AUTHFAIL;
@@ -1029,34 +1030,34 @@ TPM_RESULT TPM_SetCapability(TPM_CAPABILITY_AREA capArea, UINT32 subCapSize,
   /* set capability area */
   switch (capArea) {
     case TPM_SET_PERM_FLAGS:
-      debug("[TPM_SET_PERM_FLAGS]:%d", subCap);
+      debug("[TPM_SET_PERM_FLAGS]:%d", subCapVal);
       if (setValueSize != 1 || setValue[0] & 0xfe) return TPM_BAD_PARAMETER;
       return set_perm_flags(subCapVal, setValue[0], ownerAuth,
                             deactivated, disabled);
     case TPM_SET_STCLEAR_FLAGS:
-      debug("[TPM_SET_STCLEAR_FLAGS]:%d", subCap);
+      debug("[TPM_SET_STCLEAR_FLAGS]:%d", subCapVal);
       if (setValueSize != 1 || setValue[0] & 0xfe) return TPM_BAD_PARAMETER;
       return set_stclear_flags(subCapVal, setValue[0], ownerAuth,
                                deactivated, disabled);
     case TPM_SET_STANY_FLAGS:
-      debug("[TPM_SET_STANY_FLAGS]:%d", subCap);
+      debug("[TPM_SET_STANY_FLAGS]:%d", subCapVal);
       if (setValueSize != 1 || setValue[0] & 0xfe) return TPM_BAD_PARAMETER;
       return set_stany_flags(subCapVal, setValue[0], ownerAuth,
                              deactivated, disabled);
     case TPM_SET_PERM_DATA:
-      debug("[TPM_SET_PERM_DATA]:%d", subCap);
+      debug("[TPM_SET_PERM_DATA]:%d", subCapVal);
       return set_perm_data(subCapVal, setValue, setValueSize, ownerAuth,
                            deactivated, disabled);
     case TPM_SET_STCLEAR_DATA:
-      debug("[TPM_SET_STCLEAR_DATA]:%d", subCap);
+      debug("[TPM_SET_STCLEAR_DATA]:%d", subCapVal);
       return set_stclear_data(subCapVal, setValue, setValueSize, ownerAuth,
                               deactivated, disabled);
     case TPM_SET_STANY_DATA:
-      debug("[TPM_SET_STANY_DATA]:%d", subCap);
+      debug("[TPM_SET_STANY_DATA]:%d", subCapVal);
       return set_stany_data(subCapVal, setValue, setValueSize, ownerAuth,
                             deactivated, disabled);
     case TPM_SET_VENDOR:
-      debug("[TPM_SET_VENDOR]");
+      debug("[TPM_SET_VENDOR]:%d", subCapVal);
       return set_vendor(subCapVal, setValue, setValueSize, ownerAuth,
                         deactivated, disabled);
   }

@@ -1,6 +1,5 @@
-/* Software-Based Trusted Platform Module (TPM) Emulator for Linux
- * Copyright (C) 2006 Mario Strasser <mast@gmx.net>,
- *                    Swiss Federal Institute of Technology (ETH) Zurich
+/* Software-based Trusted Platform Module (TPM) Emulator
+ * Copyright (C) 2004-2010 Mario Strasser <mast@gmx.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published
@@ -12,7 +11,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * $Id$
+ * $Id: tpmd.c 405 2010-02-18 23:11:31Z mast $
  */
 
 #include <stdio.h>
@@ -42,10 +41,10 @@ static int opt_debug = 0;
 static int opt_foreground = 0;
 static const char *opt_socket_name = TPM_SOCKET_NAME;
 static const char *opt_storage_file = TPM_STORAGE_NAME;
-
 static uid_t opt_uid = 0;
 static gid_t opt_gid = 0;
 static int tpm_startup = 2;
+static uint32_t tpm_config = 0;
 static int rand_fh;
 
 void *tpm_malloc(size_t size)
@@ -63,10 +62,21 @@ void tpm_log(int priority, const char *fmt, ...)
     va_list ap, bp;
     va_start(ap, fmt);
     va_copy(bp, ap);
-    vsyslog(priority, fmt, ap);
+    switch (priority) {
+      case TPM_LOG_DEBUG:
+        vsyslog(LOG_DEBUG, fmt, ap);
+        break;
+      case TPM_LOG_ERROR:
+        vsyslog(LOG_ERR, fmt, ap);
+        break;
+      case TPM_LOG_INFO:
+      default:
+        vsyslog(LOG_INFO, fmt, ap);
+        break;
+    }
     va_end(ap);
-    if (!is_daemon && (priority != LOG_DEBUG || opt_debug)) {
-         vprintf(fmt, bp);
+    if (!is_daemon && (priority != TPM_LOG_DEBUG || opt_debug)) {
+        vprintf(fmt, bp);
     }
     va_end(bp);
 }
@@ -103,12 +113,12 @@ int tpm_write_to_storage(uint8_t *data, size_t data_length)
     if (fh < 0) return -1;
     while (data_length > 0) {
         res = write(fh, data, data_length);
-	if (res < 0) {
-	    close(fh);
-	    return -1;
-	}
-	data_length -= res; 
-	data += res;
+        if (res < 0) {
+            close(fh);
+            return -1;
+        }
+        data_length -= res; 
+        data += res;
     }
     close(fh);
     return 0;
@@ -131,13 +141,14 @@ int tpm_read_from_storage(uint8_t **data, size_t *data_length)
     *data_length = 0;
     while (total_length > 0) {
         res = read(fh, &(*data)[*data_length], total_length);
-	if (res < 0) {
-	    close(fh);
-	    tpm_free(*data);
-	    return -1;
-	}
+        if (res < 0) {
+            close(fh);
+            tpm_free(*data);
+            return -1;
+        }
+        if (res == 0) break;
         *data_length += res;
-	total_length -= res;
+        total_length -= res;
     }
     close(fh);
     return 0;
@@ -166,7 +177,7 @@ static void parse_options(int argc, char **argv)
     opt_uid = getuid();
     opt_gid = getgid();
     info("parsing options");
-    while ((c = getopt (argc, argv, "dfs:u:o:g:h")) != -1) {
+    while ((c = getopt (argc, argv, "dfs:u:o:g:c:h")) != -1) {
         debug("handling option '-%c'", c);
         switch (c) {
             case 'd':
@@ -201,6 +212,9 @@ static void parse_options(int argc, char **argv)
                     exit(EXIT_FAILURE);
                 }
                 opt_gid = grp->gr_gid;
+                break;
+            case 'c':
+                tpm_config = strtol(optarg, NULL, 0);
                 break;
             case '?':
                 error("unknown option '-%c'", optopt);
@@ -379,8 +393,8 @@ static void main_loop(void)
     if (sock < 0) exit(EXIT_FAILURE);
     /* init tpm emulator */
     mkdirs(opt_storage_file);
-    debug("initializing TPM emulator: %d", tpm_startup);
-    tpm_emulator_init(tpm_startup);
+    debug("initializing TPM emulator");
+    tpm_emulator_init(tpm_startup, tpm_config);
     /* start command processing */
     while (!stopflag) {
         /* wait for incomming connections */
@@ -433,13 +447,15 @@ static void main_loop(void)
                     error("tpm_handle_command() failed");
                 } else {
                     debug("sending %d bytes", out_len);
-                    while (out_len > 0) {
-                        res = write(fh, out, out_len);
+                    uint32_t len = 0;
+                    while (len < out_len) {
+                        res = write(fh, &out[len], out_len - len);
                         if (res < 0) {
-                            error("write(%d) failed: %s", out_len, strerror(errno));
+                            error("write(%d) failed: %s", 
+                                  out_len - len, strerror(errno));
                             break;
                         }
-                        out_len	-= res;
+                        len += res;
                     }
                     tpm_free(out);
                 }
@@ -465,15 +481,16 @@ int main(int argc, char **argv)
     parse_options(argc, argv);
     /* switch uid/gid if required */
     switch_uid_gid();
-    /* open random device */
-    init_random();
     /* init signal handlers */
     init_signal_handler();
     /* unless requested otherwiese, fork and daemonize process */
     if (!opt_foreground) daemonize();
+    /* open random device */
+    init_random();
     /* start main processing loop */
     main_loop();
     info("stopping TPM Emulator daemon");
+    close(rand_fh);
     closelog();
-    return 0;
+    return EXIT_SUCCESS;
 }

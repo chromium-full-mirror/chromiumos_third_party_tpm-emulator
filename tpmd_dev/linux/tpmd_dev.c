@@ -1,17 +1,17 @@
-/* Software-Based Trusted Platform Module (TPM) Emulator for Linux 
- * Copyright (C) 2004 Mario Strasser <mast@gmx.net>,
+/* Software-based Trusted Platform Module (TPM) Emulator
+ * Copyright (C) 2004-2010 Mario Strasser <mast@gmx.net>
  *
- * This module is free software; you can redistribute it and/or modify 
- * it under the terms of the GNU General Public License as published 
- * by the Free Software Foundation; either version 2 of the License, 
- * or (at your option) any later version.  
+ * This module is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published
+ * by the Free Software Foundation; either version 2 of the License,
+ * or (at your option) any later version.
  *
- * This module is distributed in the hope that it will be useful, 
- * but WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
+ * This module is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * $Id$
+ * $Id: tpmd_dev.c 426 2010-02-22 17:11:58Z mast $
  */
 
 #include <linux/module.h>
@@ -24,11 +24,12 @@
 #include <linux/net.h>
 #include <linux/un.h>
 
+#include "config.h"
+
 #define TPM_DEVICE_MINOR  224
-#define TPM_DEVICE_NAME   "tpm"
+#define TPM_DEVICE_ID     "tpm"
 #define TPM_MODULE_NAME   "tpmd_dev"
 
-#define TPM_RESPONSE_SIZE 4096
 #define TPM_STATE_IS_OPEN 0
 
 #ifdef DEBUG
@@ -47,10 +48,10 @@
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Mario Strasser <mast@gmx.net>");
 MODULE_DESCRIPTION("Trusted Platform Module (TPM) Emulator");
-MODULE_SUPPORTED_DEVICE(TPM_DEVICE_NAME);
+MODULE_SUPPORTED_DEVICE(TPM_DEVICE_ID);
 
 /* module parameters */
-char *tpmd_socket_name = "/var/run/tpm/tpmd_socket:0";
+char *tpmd_socket_name = TPM_SOCKET_NAME;
 module_param(tpmd_socket_name, charp, 0444);
 MODULE_PARM_DESC(tpmd_socket_name, " Sets the name of the TPM daemon socket.");
 
@@ -114,7 +115,7 @@ static int tpmd_handle_command(const uint8_t *in, uint32_t in_size)
     return res;
   }
   /* receive response from tpmd */
-  tpm_response.size = TPM_RESPONSE_SIZE;
+  tpm_response.size = TPM_CMD_BUF_SIZE;
   tpm_response.data = kmalloc(tpm_response.size, GFP_KERNEL);
   if (tpm_response.data == NULL) return -1;
   memset(&msg, 0, sizeof(msg));
@@ -238,7 +239,7 @@ struct file_operations fops = {
 
 static struct miscdevice tpm_dev = {
   .minor      = TPM_DEVICE_MINOR, 
-  .name       = TPM_DEVICE_NAME, 
+  .name       = TPM_DEVICE_ID, 
   .fops       = &fops,
 };
 

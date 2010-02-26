@@ -1,7 +1,6 @@
-/* Software-Based Trusted Platform Module (TPM) Emulator for Linux
- * Copyright (C) 2004 Mario Strasser <mast@gmx.net>,
- *                    Swiss Federal Institute of Technology (ETH) Zurich,
- *               2005, 2006 Heiko Stamer <stamer@gaos.org>
+/* Software-based Trusted Platform Module (TPM) Emulator
+ * Copyright (C) 2004-2010 Mario Strasser <mast@gmx.net>
+ *               2005-2008 Heiko Stamer <stamer@gaos.org>
  *
  * This module is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published
@@ -13,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * $Id$
+ * $Id: tpm_marshalling.c 372 2010-02-15 12:52:00Z mast $
  */
 
 #include "tpm_marshalling.h"
@@ -1692,7 +1691,6 @@ int tpm_unmarshal_TPM_PERMANENT_DATA(BYTE **ptr, UINT32 *length, TPM_PERMANENT_D
 
 int tpm_marshal_TPM_STCLEAR_DATA(BYTE **ptr, UINT32 *length, TPM_STCLEAR_DATA *v)
 {
-  UINT32 i;
   if (tpm_marshal_TPM_STRUCTURE_TAG(ptr, length, v->tag)
       || tpm_marshal_TPM_NONCE(ptr, length, &v->contextNonceKey)
       || tpm_marshal_TPM_COUNT_ID(ptr, length, v->countID)
@@ -1704,7 +1702,6 @@ int tpm_marshal_TPM_STCLEAR_DATA(BYTE **ptr, UINT32 *length, TPM_STCLEAR_DATA *v
 
 int tpm_unmarshal_TPM_STCLEAR_DATA(BYTE **ptr, UINT32 *length, TPM_STCLEAR_DATA *v)
 {
-  UINT32 i;
   if (tpm_unmarshal_TPM_STRUCTURE_TAG(ptr, length, &v->tag)
       || tpm_unmarshal_TPM_NONCE(ptr, length, &v->contextNonceKey)
       || tpm_unmarshal_TPM_COUNT_ID(ptr, length, &v->countID)
@@ -1785,6 +1782,30 @@ int tpm_unmarshal_TPM_STANY_DATA(BYTE **ptr, UINT32 *length, TPM_STANY_DATA *v)
   }
   if (tpm_unmarshal_DAAHANDLE(ptr, length, &v->currentDAA)
       || tpm_unmarshal_TPM_TRANSHANDLE(ptr, length, &v->transExclusive)) return -1;
+  return 0;
+}
+
+int tpm_marshal_TPM_DATA(BYTE **ptr, UINT32 *length, TPM_DATA *v)
+{
+  if (tpm_marshal_TPM_PERMANENT_FLAGS(ptr, length, &v->permanent.flags)
+      || tpm_marshal_BOOL(ptr, length, v->permanent.flags.selfTestSucceeded)
+      || tpm_marshal_BOOL(ptr, length, v->permanent.flags.owned)
+      || tpm_marshal_TPM_PERMANENT_DATA(ptr, length, &v->permanent.data)
+      || tpm_marshal_TPM_STCLEAR_FLAGS(ptr, length, &v->stclear.flags)
+      || tpm_marshal_TPM_STCLEAR_DATA(ptr, length, &v->stclear.data)
+      || tpm_marshal_TPM_STANY_DATA(ptr, length, &v->stany.data)) return -1;
+  return 0;
+}
+
+int tpm_unmarshal_TPM_DATA(BYTE **ptr, UINT32 *length, TPM_DATA *v)
+{
+  if (tpm_unmarshal_TPM_PERMANENT_FLAGS(ptr, length, &v->permanent.flags)
+      || tpm_unmarshal_BOOL(ptr, length, &v->permanent.flags.selfTestSucceeded)
+      || tpm_unmarshal_BOOL(ptr, length, &v->permanent.flags.owned)
+      || tpm_unmarshal_TPM_PERMANENT_DATA(ptr, length, &v->permanent.data)
+      || tpm_unmarshal_TPM_STCLEAR_FLAGS(ptr, length, &v->stclear.flags)
+      || tpm_unmarshal_TPM_STCLEAR_DATA(ptr, length, &v->stclear.data)
+      || tpm_unmarshal_TPM_STANY_DATA(ptr, length, &v->stany.data)) return -1;
   return 0;
 }
 

@@ -1,4 +1,0 @@
-* update encryption: RC4 -> AES256
-  - de- and encryption
-  - function to compute buffer size
-

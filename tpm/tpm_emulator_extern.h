@@ -1,5 +1,5 @@
-/* Software-Based Trusted Platform Module (TPM) Emulator for Linux
- * Copyright (C) 2004 Mario Strasser <mast@gmx.net>,
+/* Software-based Trusted Platform Module (TPM) Emulator
+ * Copyright (C) 2004-2010 Mario Strasser <mast@gmx.net>
  *
  * This module is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published
@@ -11,36 +11,31 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * $Id$
+ * $Id: tpm_emulator_extern.h 389 2010-02-18 09:52:11Z mast $
  */
 
 #ifndef _TPM_EMULATOR_EXTERN_H_
 #define _TPM_EMULATOR_EXTERN_H_
 
-#include <stdint.h>
+#include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
-#include <syslog.h>
-
-/* TPM emulator configuration */
-
-#undef  TPM_STRONG_PERSISTENCE
-#undef  TPM_GENERATE_EK
-#undef  TPM_GENERATE_SEED_DAA
-#undef  TPM_USE_INTERNAL_PRNG
-#undef  TPM_ENABLE_PRNG_STATE_SETTING
 
 /* log functions */
 
+enum {
+  TPM_LOG_DEBUG,
+  TPM_LOG_INFO,
+  TPM_LOG_ERROR
+};
+
 void tpm_log(int priority, const char *fmt, ...);
 
-#define debug(fmt, ...) tpm_log(LOG_DEBUG, "%s:%d: Debug: " fmt "\n", \
+#define debug(fmt, ...) tpm_log(TPM_LOG_DEBUG, "%s:%d: Debug: " fmt "\n", \
                                 __FILE__, __LINE__, ## __VA_ARGS__)
-#define info(fmt, ...)  tpm_log(LOG_INFO, "%s:%d: Info: " fmt "\n", \
+#define info(fmt, ...)  tpm_log(TPM_LOG_INFO, "%s:%d: Info: " fmt "\n", \
                                 __FILE__, __LINE__, ## __VA_ARGS__)
-#define error(fmt, ...) tpm_log(LOG_ERR, "%s:%d: Error: " fmt "\n", \
-                                __FILE__, __LINE__, ## __VA_ARGS__)
-#define alert(fmt, ...) tpm_log(LOG_ALERT, "%s:%d: Alert: " fmt "\n", \
+#define error(fmt, ...) tpm_log(TPM_LOG_ERROR, "%s:%d: Error: " fmt "\n", \
                                 __FILE__, __LINE__, ## __VA_ARGS__)
 
 /* memory allocation */

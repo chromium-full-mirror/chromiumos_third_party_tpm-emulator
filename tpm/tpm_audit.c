@@ -1,6 +1,5 @@
-/* Software-Based Trusted Platform Module (TPM) Emulator for Linux
- * Copyright (C) 2004 Mario Strasser <mast@gmx.net>,
- *                    Swiss Federal Institute of Technology (ETH) Zurich
+/* Software-based Trusted Platform Module (TPM) Emulator
+ * Copyright (C) 2004-2010 Mario Strasser <mast@gmx.net>
  *
  * This module is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published
@@ -12,7 +11,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * $Id$
+ * $Id: tpm_audit.c 385 2010-02-17 15:41:28Z mast $
  */
 
 #include "tpm_emulator.h"
@@ -66,7 +65,7 @@ void tpm_audit_request(TPM_COMMAND_CODE ordinal, TPM_REQUEST *req)
 void tpm_audit_response(TPM_COMMAND_CODE ordinal, TPM_RESPONSE *rsp)
 {
   tpm_sha1_ctx_t sha1_ctx;
-  BYTE buf[sizeof_TPM_AUDIT_EVENT_OUT()], *ptr;
+  BYTE buf[sizeof_TPM_AUDIT_EVENT_OUT(x)], *ptr;
   UINT32 len;
   TPM_COMMAND_CODE ord = ordinal & TPM_ORD_INDEX_MASK;
   if (ord < TPM_ORD_MAX

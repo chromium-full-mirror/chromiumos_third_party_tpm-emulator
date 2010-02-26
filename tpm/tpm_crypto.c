@@ -1,6 +1,5 @@
-/* Software-Based Trusted Platform Module (TPM) Emulator for Linux
- * Copyright (C) 2004 Mario Strasser <mast@gmx.net>,
- *                    Swiss Federal Institute of Technology (ETH) Zurich
+/* Software-based Trusted Platform Module (TPM) Emulator
+ * Copyright (C) 2004-2010 Mario Strasser <mast@gmx.net>
  *
  * This module is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published
@@ -12,7 +11,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * $Id$
+ * $Id: tpm_crypto.c 368 2010-02-15 09:26:37Z mast $
  */
 
 #include "tpm_emulator.h"
@@ -201,16 +200,16 @@ TPM_RESULT TPM_Sign(TPM_KEY_HANDLE keyHandle, UINT32 areaToSignSize,
 
 void tpm_get_random_bytes(void *buf, size_t nbytes)
 {
-#ifdef TPM_USE_INTERNAL_PRNG
-  tpm_rc4_ctx_t ctx;
-  tpm_rc4_init(&ctx, tpmData.permanent.data.rngState,
-    sizeof(tpmData.permanent.data.rngState));
-  tpm_rc4_crypt(&ctx, buf, buf, nbytes);
-  tpm_rc4_crypt(&ctx, tpmData.permanent.data.rngState,
-    tpmData.permanent.data.rngState, sizeof(tpmData.permanent.data.rngState));
-#else
-  tpm_get_extern_random_bytes(buf, nbytes);
-#endif
+  if (tpmConf & TPM_CONF_USE_INTERNAL_PRNG) {
+    tpm_rc4_ctx_t ctx;
+    tpm_rc4_init(&ctx, tpmData.permanent.data.rngState,
+      sizeof(tpmData.permanent.data.rngState));
+    tpm_rc4_crypt(&ctx, buf, buf, nbytes);
+    tpm_rc4_crypt(&ctx, tpmData.permanent.data.rngState,
+      tpmData.permanent.data.rngState, sizeof(tpmData.permanent.data.rngState));
+  } else {
+    tpm_get_extern_random_bytes(buf, nbytes);
+  }
 }
 
 TPM_RESULT TPM_GetRandom(UINT32 bytesRequested, UINT32 *randomBytesSize, 

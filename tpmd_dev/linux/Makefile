@@ -1,7 +1,7 @@
-# Software-Based Trusted Platform Module (TPM) Emulator for Linux
-# Copyright (C) 2006 Mario Strasser <mast@gmx.net>
+# Software-based Trusted Platform Module (TPM) Emulator
+# Copyright (C) 2004-2010 Mario Strasser <mast@gmx.net>
 #
-# $Id$
+# $Id: Makefile 364 2010-02-11 10:24:45Z mast $
 
 # kernel settings
 KERNEL_RELEASE := $(shell uname -r)
@@ -14,25 +14,24 @@ obj-m          := $(MODULE_NAME).o
 
 # do not print "Entering directory ..."
 MAKEFLAGS      += --no-print-directory
-EXTRA_CFLAGS   += -Wall -Werror -DDEBUG
+EXTRA_CFLAGS   += -Wall -Werror
 
 all:
 	@$(MAKE) -C $(KERNEL_BUILD) M=$(CURDIR) modules
 
 clean:
 	@$(MAKE) -C $(KERNEL_BUILD) M=$(CURDIR) clean
-	rm -f Modules.symvers tpmd_dev.rules
+	@rm -f Modules.symvers tpmd_dev.rules
 
-TPMD_USER  ?= tss
-TPMD_GROUP ?= tss
+TPM_GROUP ?= tss
 INSTALL ?= install
 
 tpmd_dev.rules: tpmd_dev.rules.in
-	sed -e "s/\$$TPMD_GROUP/$(TPMD_GROUP)/g" tpmd_dev.rules.in > tpmd_dev.rules
+	@sed -e "s/\$$TPM_GROUP/$(TPM_GROUP)/g" tpmd_dev.rules.in > tpmd_dev.rules
 
 install: tpmd_dev.rules
 	@$(MAKE) -C $(KERNEL_BUILD) M=$(CURDIR) INSTALL_MOD_PATH=$(DESTDIR) modules_install
-	$(INSTALL) -m 644 -D tpmd_dev.rules $(DESTDIR)/etc/udev/rules.d/80-tpmd_dev.rules
+	@$(INSTALL) -m 644 -D tpmd_dev.rules $(DESTDIR)/etc/udev/rules.d/80-tpmd_dev.rules
 
 .PHONY: all clean install
 

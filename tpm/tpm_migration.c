@@ -1,6 +1,5 @@
-/* Software-Based Trusted Platform Module (TPM) Emulator for Linux
- * Copyright (C) 2004 Mario Strasser <mast@gmx.net>,
- *                    Swiss Federal Institute of Technology (ETH) Zurich
+/* Software-based Trusted Platform Module (TPM) Emulator
+ * Copyright (C) 2004-2010 Mario Strasser <mast@gmx.net>
  *
  * This module is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published
@@ -12,7 +11,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * $Id$
+ * $Id: tpm_migration.c 367 2010-02-13 15:52:18Z mast $
  */
 
 #include "tpm_emulator.h"
@@ -72,8 +71,8 @@ TPM_RESULT TPM_CreateMigrationBlob(TPM_KEY_HANDLE parentHandle,
   TPM_RESULT res;
   TPM_KEY_DATA *parent;
   TPM_SESSION_DATA *session;
-  BYTE *ptr, *buf, *key_buf;
-  UINT32 len, key_buf_size;
+  BYTE *key_buf;
+  UINT32 key_buf_size;
   TPM_STORE_ASYMKEY store;
   TPM_PUBKEY_DATA key;
 

@@ -1,6 +1,5 @@
-/* Software-Based Trusted Platform Module (TPM) Emulator for Linux
- * Copyright (C) 2006 Mario Strasser <mast@gmx.net>,
- *                    Swiss Federal Institute of Technology (ETH) Zurich
+/* Software-based Trusted Platform Module (TPM) Emulator
+ * Copyright (C) 2004-2010 Mario Strasser <mast@gmx.net>
  *
  * This module is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published
@@ -12,7 +11,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * $Id$
+ * $Id: bn.c 406 2010-02-19 11:08:30Z mast $
  */
  
 #include "bn.h"
@@ -24,7 +23,7 @@ void tpm_bn_init(tpm_bn_t a)
 
 void tpm_bn_init2(tpm_bn_t a, size_t nbits)
 {
-  mpz_init2(a, nbits + + GMP_NUMB_BITS);
+  mpz_init2(a, nbits + GMP_NUMB_BITS);
 }
 
 void tpm_bn_init_set(tpm_bn_t a, tpm_bn_t val)
@@ -64,7 +63,9 @@ void tpm_bn_import(tpm_bn_t out, size_t count, int order, const void *in)
 
 void tpm_bn_export(void *out, size_t *count, int order, tpm_bn_t in)
 {
-  mpz_export(out, count, order, 1, 0, 0, in);
+  size_t count_out;
+  mpz_export(out, &count_out, order, 1, 0, 0, in);
+  if (count != NULL) *count = count_out;
 }
 
 int tpm_bn_cmp(tpm_bn_t a, tpm_bn_t b)

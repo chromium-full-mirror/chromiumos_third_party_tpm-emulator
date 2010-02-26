@@ -1,6 +1,5 @@
-/* Software-Based Trusted Platform Module (TPM) Emulator for Linux
- * Copyright (C) 2004 Mario Strasser <mast@gmx.net>,
- *                    Swiss Federal Institute of Technology (ETH) Zurich
+/* Software-based Trusted Platform Module (TPM) Emulator
+ * Copyright (C) 2004-2010 Mario Strasser <mast@gmx.net>
  *
  * This module is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published
@@ -12,7 +11,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * $Id$
+ * $Id: tpm_cmd_handler.c 377 2010-02-16 14:52:57Z mast $
  */
 
 #include "tpm_marshalling.h"
@@ -21,6 +20,10 @@
 #include "crypto/hmac.h"
 #include "tpm_data.h"
 #include "tpm_handles.h"
+
+#ifdef MTM_EMULATOR
+#include "mtm/mtm_commands.h"
+#endif
 
 UINT32 tpm_get_in_param_offset(TPM_COMMAND_CODE ordinal)
 {
@@ -361,7 +364,11 @@ static TPM_RESULT execute_TPM_GetCapability(TPM_REQUEST *req, TPM_RESPONSE *rsp)
       || tpm_unmarshal_BLOB(&ptr, &len, &subCap, subCapSize)
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
+#ifdef MTM_EMULATOR
+  res = MTM_GetCapability(capArea, subCapSize, subCap, &respSize, &resp);
+#else
   res = TPM_GetCapability(capArea, subCapSize, subCap, &respSize, &resp);
+#endif
   if (res != TPM_SUCCESS) return res;
   /* marshal output */
   rsp->paramSize = len = 4 + respSize;
@@ -1839,7 +1846,11 @@ static TPM_RESULT execute_TPM_Extend(TPM_REQUEST *req, TPM_RESPONSE *rsp)
       || tpm_unmarshal_TPM_DIGEST(&ptr, &len, &inDigest)
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
+#ifdef MTM_EMULATOR
+  res = MTM_Extend(pcrNum, &inDigest, &outDigest);
+#else
   res = TPM_Extend(pcrNum, &inDigest, &outDigest);
+#endif
   if (res != TPM_SUCCESS) return res;
   /* marshal output */
   rsp->paramSize = len = 20;
@@ -1926,7 +1937,11 @@ static TPM_RESULT execute_TPM_PCR_Reset(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   if (tpm_unmarshal_TPM_PCR_SELECTION(&ptr, &len, &pcrSelection)
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
+#ifdef MTM_EMULATOR
+  return MTM_PCR_Reset(&pcrSelection);
+#else
   return TPM_PCR_Reset(&pcrSelection);
+#endif
 }
 
 static TPM_RESULT execute_TPM_Quote2(TPM_REQUEST *req, TPM_RESPONSE *rsp)
@@ -2591,7 +2606,11 @@ static TPM_RESULT execute_TPM_FlushSpecific(TPM_REQUEST *req, TPM_RESPONSE *rsp)
       || tpm_unmarshal_TPM_RESOURCE_TYPE(&ptr, &len, &resourceType)
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
+#ifdef MTM_EMULATOR
+  return MTM_FlushSpecific(handle, resourceType);
+#else
   return TPM_FlushSpecific(handle, resourceType);
+#endif
 }
 
 static TPM_RESULT execute_TPM_GetTicks(TPM_REQUEST *req, TPM_RESPONSE *rsp)
@@ -2868,7 +2887,11 @@ static TPM_RESULT execute_TPM_ReleaseCounter(TPM_REQUEST *req, TPM_RESPONSE *rsp
   if (tpm_unmarshal_TPM_COUNT_ID(&ptr, &len, &countID)
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
+#ifdef MTM_EMULATOR
+  return MTM_ReleaseCounter(countID, &req->auth1);
+#else
   return TPM_ReleaseCounter(countID, &req->auth1);
+#endif
 }
 
 static TPM_RESULT execute_TPM_ReleaseCounterOwner(TPM_REQUEST *req, TPM_RESPONSE *rsp)
@@ -2884,7 +2907,11 @@ static TPM_RESULT execute_TPM_ReleaseCounterOwner(TPM_REQUEST *req, TPM_RESPONSE
   if (tpm_unmarshal_TPM_COUNT_ID(&ptr, &len, &countID)
       || len != 0) return TPM_BAD_PARAMETER;
   /* execute command */
+#ifdef MTM_EMULATOR
+  return MTM_ReleaseCounterOwner(countID, &req->auth1);
+#else
   return TPM_ReleaseCounterOwner(countID, &req->auth1);
+#endif
 }
 
 static TPM_RESULT execute_TPM_DAA_Join(TPM_REQUEST *req, TPM_RESPONSE *rsp)
@@ -4033,6 +4060,10 @@ void tpm_execute_command(TPM_REQUEST *req, TPM_RESPONSE *rsp)
     break;
 
     default:
+#ifdef MTM_EMULATOR
+      res = mtm_execute_command(req, rsp);
+      if (res != TPM_BAD_ORDINAL) break;
+#endif
       info("The ordinal (0x%02x) was unknown or inconsistent", req->ordinal);
       tpm_setup_error_response(TPM_BAD_ORDINAL, rsp);
       return;
@@ -4050,11 +4081,11 @@ void tpm_execute_command(TPM_REQUEST *req, TPM_RESPONSE *rsp)
     info("TPM command succeeded");
     rsp->size += rsp->paramSize;
     if (rsp->tag != TPM_TAG_RSP_COMMAND) tpm_setup_rsp_auth(req->ordinal, rsp);
-#ifdef TPM_STRONG_PERSISTENCE
-    if (tpm_store_permanent_data() != 0) {
-      error("tpm_store_permanent_data() failed");
-    } 
-#endif
+    if (tpmConf & TPM_CONF_STRONG_PERSISTENCE) {
+      if (tpm_store_permanent_data() != 0) {
+        error("tpm_store_permanent_data() failed");
+      }
+    }
   }
   /* terminate authorization sessions if necessary */
   if (rsp->auth1 != NULL && !rsp->auth1->continueAuthSession) 
@@ -4071,9 +4102,13 @@ void tpm_execute_command(TPM_REQUEST *req, TPM_RESPONSE *rsp)
   }
 }
 
-void tpm_emulator_init(uint32_t startup)
+void tpm_emulator_init(uint32_t startup, uint32_t conf)
 {
-  debug("tpm_emulator_init()");
+  debug("tpm_emulator_init(%d, 0x%08x)", startup, conf);
+  tpmConf = conf;
+#ifdef MTM_EMULATOR
+  info("MTM support enabled");
+#endif
   /* try to restore data, if it fails use default values */
   if (tpm_restore_permanent_data() != 0) tpm_init_data();
   TPM_Init(startup);

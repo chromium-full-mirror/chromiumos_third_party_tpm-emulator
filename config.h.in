@@ -1,5 +1,5 @@
-/* Software-Based Trusted Platform Module (TPM) Emulator for Linux
- * Copyright (C) 2004 Mario Strasser <mast@gmx.net>,
+/* Software-based Trusted Platform Module (TPM) Emulator
+ * Copyright (C) 2004-2010 Mario Strasser <mast@gmx.net>
  *
  * This module is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published
@@ -11,28 +11,23 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * $Id$
+ * $Id: config.h.in 426 2010-02-22 17:11:58Z mast $
  */
 
 #ifndef _CONFIG_H_
 #define _CONFIG_H_
 
 /* project and build version */
-#define VERSION_MAJOR 0
-#define VERSION_MINOR 7
-#define VERSION_BUILD 144
-
-/* TPM emulator configuration */
-/* #undef TPM_STRONG_PERSISTENCE */
-/* #undef TPM_GENERATE_EK */
-/* #undef TPM_GENERATE_SEED_DAA */
-/* #undef TPM_USE_INTERNAL_PRNG */
-/* #undef TPM_ENABLE_PRNG_STATE_SETTING */
+#define VERSION_MAJOR ${TPM_Emulator_VERSION_MAJOR}
+#define VERSION_MINOR ${TPM_Emulator_VERSION_MINOR}
+#define VERSION_BUILD ${TPM_Emulator_VERSION_BUILD}
 
 /* TDDL and LKM configuration */
-#define TPM_SOCKET_NAME  "/var/run/tpm/tpmd_socket:0"
-#define TPM_STORAGE_NAME "/var/lib/tpm/tpm_emulator-1.2.0.7"
-#define TPM_DEVICE_NAME  "/dev/tpm"
+#define TPM_SOCKET_NAME  "${TPM_SOCKET_NAME}"
+#define TPM_STORAGE_NAME "${TPM_STORAGE_NAME}"
+#define TPM_DEVICE_NAME  "${TPM_DEVICE_NAME}"
+#define TPM_LOG_FILE     "${TPM_LOG_FILE}"
+#define TPM_CMD_BUF_SIZE 4096
 
 #endif /* _CONFIG_H_ */
 

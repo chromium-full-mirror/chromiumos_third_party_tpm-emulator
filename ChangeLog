@@ -1,14 +1,82 @@
+2010-02-22   Mario Strasser <mast@gmx.net>
+	* tpmd_dev/darwin/*: darwin module added
+	* Makefile: installation on Mac OS X enabled
+	* README: README updated
+	* ChangeLog: ChangeLog updated
+
+
+2010-02-19   Mario Strasser <mast@gmx.net>
+	* windows/*: several fixes
+	* crypto/bn.c: work around for older gmp libs
+	* tddl/*: platform independent tddl
+	* README: README updated
+
+
+2010-02-18   Mario Strasser <mast@gmx.net>
+	* build.sh, buils.bat: build scripts added
+	* tpmd.c, tpm_emulator_extern.h: log modes independent of syslog
+	* windows/tpmd.c: tpmd for windows added
+	* windows/control_tpmd.bat: service control function added
+
+
+2010-02-16   Mario Strasser <mast@gmx.net>
+	* tpm/*: MTM functions added
+	* tpmd.c: parameter to set configuration flags added
+	* README: README updated
+
+
+2010-02-15   Mario Strasser <mast@gmx.net>
+	* tpm_emulator.h, tpm_cmd_handler.c: startup configuration added
+	* CMakeLists.txt: build of openbsd module added
+	* tpm/*: MTM support prepared and MTM hooks added
+
+
+2010-02-13   Mario Strasser <mast@gmx.net>
+	* all: unused variables removed; free_TPM_DATA added
+
+
+2010-02-12   Mario Strasser <mast@gmx.net>
+	* tpm_marshalling.[ch]: (un)marshaling_TPM_DATA added
+
+
+2010-02-11   Mario Strasser <mast@gmx.net>
+	* CMakeLists.txt: installation support added
+	* README: README updated
+	* *.h: headers updated
+
+
+2010-02-10   Mario Strasser <mast@gmx.net>
+	* all: new CMake makefiles added
+	* README: README updated
+	* CMakeLists.txt, config.h.in: cpack support added
+
+
+2010-02-09   Mario Strasser <mast@gmx.net>
+	* crypto/*, tpm/*: BE* conversion functions removed
+	* tpmd/tpmd.c:  smart startup mode handling
+	* crypto/*.h, tpm/*.h: tpm_emulator_config.h removed
+	* tpm_testinc.c: usage of tpm_min/max removed
+	* tpm_data.c, tpm_emulator_extern.h, tpmd.c:
+		_file -> _storage
+	* config.h: central config.h added
+	* all: directory structure changed
+
+
+2009-12-05  Mario Strasser <mast@gmx.net>
+	* tpmd_dev/Makefile: installation patch added, thanks go to David Anderson
+
+
 2009-10-05  Mario Strasser <mast@gmx.net>
-  * all: numerous bug fixes to make the trousers test pass
+	* all: numerous bug fixes to make the trousers test pass
 
 
 2009-10-02  Mario Strasser <mast@gmx.net>
-  * tpm_delegation.c: delegation support completed
+	* tpm_delegation.c: delegation support completed
 
 
 2009-09-24  Mario Strasser <mast@gmx.net>
-  * tpm_crypto.c: internal, deterministic PRNG added (for testing etc.)
-  * tpm_authorization.c: DSAP verification added
+	* tpm_crypto.c: internal, deterministic PRNG added (for testing etc.)
+	* tpm_authorization.c: DSAP verification added
 
 
 2009-09-19  Mario Strasser <mast@gmx.net>
