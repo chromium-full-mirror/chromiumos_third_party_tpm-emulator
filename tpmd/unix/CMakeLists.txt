@@ -6,7 +6,8 @@
 include_directories("${PROJECT_SOURCE_DIR}/tpm")
 
 file(GLOB tpmd_SRCS "*.[h|c]")
-add_executable(tpmd ${tpmd_SRCS})
+add_executable(tpmd ${CMAKE_CURRENT_SOURCE_DIR}/tpmd.c)
+add_library(tpmemu ${tpmd_SRCS})
 if(MTM_EMULATOR)
 add_definitions(-DMTM_EMULATOR)
 target_link_libraries(tpmd mtm tpm crypto)
