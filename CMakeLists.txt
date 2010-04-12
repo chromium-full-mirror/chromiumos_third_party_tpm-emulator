@@ -50,6 +50,9 @@ include(CPack)
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_BINARY_DIR})
 
+# uncomment this for debugging
+# set(CMAKE_VERBOSE_MAKEFILE ON)
+
 # add internal libraries
 add_subdirectory(tpm)
 add_subdirectory(mtm)
@@ -59,7 +62,9 @@ add_subdirectory(crypto)
 add_subdirectory(tddl)
 
 # add kernel modules
+if(NOT "$ENV{CHROMEOS}")
 add_subdirectory(tpmd_dev)
+endif()
 
 # add executables
 add_subdirectory(tpmd)
